@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 42 33% 97%;
+    --foreground: 206 30% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 206 30% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 206 30% 13%;
+    --primary: 191 44% 24%;
+    --primary-foreground: 44 100% 98%;
+    --secondary: 36 58% 92%;
+    --secondary-foreground: 206 30% 13%;
+    --muted: 45 20% 92%;
+    --muted-foreground: 205 14% 38%;
+    --accent: 33 86% 55%;
+    --accent-foreground: 206 30% 13%;
+    --border: 42 22% 84%;
+    --input: 42 22% 84%;
+    --ring: 191 44% 24%;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply min-h-screen bg-background bg-hero-grid font-sans text-foreground;
+    margin: 0;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display text-foreground;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

@@ -1,0 +1,871 @@
+\documentclass[12pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{parskip}
+
+\definecolor{primary}{HTML}{1E3A5F}
+\definecolor{accent}{HTML}{2E86AB}
+\definecolor{lightgray}{HTML}{F5F5F5}
+
+\titleformat{\section}{\large\bfseries\color{primary}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{accent}}{}{0em}{}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=accent,
+    urlcolor=accent
+}
+
+\title{
+    \vspace{-1cm}
+    {\large\color{accent} Documento de Referência Técnica} \\
+    \vspace{0.3cm}
+    {\LARGE\bfseries\color{primary} SafeCondo — MVP} \\
+    \vspace{0.3cm}
+    {\normalsize Decisões técnicas e escopo acordados até o momento}
+}
+\author{Equipe SafeCondo}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\vspace{0.5cm}
+\hrule
+\vspace{1cm}
+
+% -----------------------------------------
+\section{Stack Tecnológica}
+
+\subsection{Frontend}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{React + TypeScript} — interface web do síndico e painel de transparência do morador.
+    A tipagem estática do TypeScript reduz erros em formulários complexos (cadastro de equipamentos,
+    upload de laudos) e facilita a manutenção à medida que o produto cresce.
+    \item \textbf{Tailwind CSS} — estilização utilitária inline, sem arquivos CSS separados.
+    Elimina a necessidade de nomear classes e manter consistência manual de espaçamento,
+    especialmente vantajoso para um time enxuto.
+    \item \textbf{shadcn/ui} — biblioteca de componentes cujo código é copiado diretamente
+    para o projeto, sem dependência de versão externa. Fornece prontos os componentes mais
+    usados no SafeCondo: \texttt{Table}, \texttt{Badge}, \texttt{Dialog}, \texttt{Card},
+    \texttt{Form} e \texttt{Progress}.
+    \item \textbf{Recharts} — gráficos (barras empilhadas do calendário de inspeções e
+    barra de score de saúde), com integração nativa ao shadcn/ui.
+    \item \textbf{react-hook-form + Zod} — gerenciamento e validação de formulários.
+    Os schemas Zod podem ser compartilhados entre frontend e backend, garantindo
+    consistência de tipos de ponta a ponta.
+\end{itemize}
+
+\subsection{Backend}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Node.js + Fastify} — servidor HTTP responsável pelas regras de negócio,
+    agendamento de alertas e controle de acesso. O Fastify foi escolhido sobre o Express por
+    oferecer suporte nativo a TypeScript, melhor performance e validação de schema integrada.
+    \item \textbf{Prisma ORM} — camada de acesso ao banco de dados. Oferece migrations
+    versionadas, type-safety de ponta a ponta com TypeScript e simplifica consultas relacionais.
+    \item \textbf{node-cron} — agendamento do job diário de alertas (executa às 8h,
+    horário de Brasília).
+    \item \textbf{Nodemailer + Gmail OAuth2} — envio de e-mails transacionais. A autenticação
+    via OAuth2 elimina o uso de senhas de app e é mais robusta para produção.
+\end{itemize}
+
+\subsection{Banco de Dados}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{PostgreSQL} — banco relacional escolhido por afinidade com a estrutura dos
+    dados do domínio (detalhado na Seção~\ref{sec:banco}).
+\end{itemize}
+
+\subsection{Futuro — Fora do MVP}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Flutter} — aplicativo mobile para síndicos e moradores. Presente na stack
+    final, mas não no MVP.
+\end{itemize}
+
+\vspace{0.5cm}
+
+% -----------------------------------------
+\section{Justificativa: PostgreSQL vs.\ NoSQL}
+\label{sec:banco}
+
+Os dados do SafeCondo são \textbf{altamente relacionais} por natureza:
+
+\[
+\text{Condomínio} \rightarrow \text{Equipamentos} \rightarrow \text{Vistorias} \rightarrow \text{Documentos/Laudos}
+\]
+
+As razões para manter o PostgreSQL no MVP são:
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Integridade referencial} — chaves estrangeiras garantem que nenhuma vistoria
+    fique órfã de equipamento, e nenhum laudo seja vinculado a uma vistoria inexistente.
+    \item \textbf{Consistência transacional (ACID)} — crítico ao registrar uma vistoria junto
+    com seu documento em uma única operação atômica.
+    \item \textbf{Queries relacionais} — consultas como ``todos os equipamentos vencidos de um
+    condomínio'' são triviais em SQL e custosas em documentos NoSQL.
+    \item \textbf{Prisma + Postgres} — integração madura, com suporte completo a migrations e
+    geração automática de tipos TypeScript.
+\end{enumerate}
+
+\textbf{Quando NoSQL faria sentido?} Apenas se houvesse necessidade de armazenar dados
+não estruturados em larga escala (ex.: logs de IoT de sensores de elevador) — o que está
+fora do escopo do MVP.
+
+\vspace{0.5cm}
+
+% -----------------------------------------
+\section{Casos de Uso Essenciais do MVP}
+
+O critério de inclusão é direto: apenas o que valida a hipótese central do produto.
+
+\begin{quote}
+\textit{``A automação de alertas e a centralização digital de documentos reduz
+o esquecimento de manutenções críticas.''}
+\end{quote}
+
+\subsection{UC-01 — Gestão de Vistorias}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Cadastrar equipamentos obrigatórios (elevador, para-raios, caixa d'água etc.)
+    \item Definir periodicidade de cada manutenção conforme NBR 5674
+    \item Visualizar cronograma de vencimentos
+\end{itemize}
+
+\subsection{UC-02 — Alertas Proativos}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Receber notificação antes do vencimento de um prazo técnico
+    \item Marcar vistoria como realizada
+    \item Registrar responsável e observações da execução
+\end{itemize}
+
+\subsection{UC-03 — Repositório de Documentos}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Anexar laudos e certificados a cada vistoria
+    \item Acessar histórico técnico de um equipamento
+    \item Base da \textit{memória técnica auditável} — principal diferencial do produto
+\end{itemize}
+
+\subsection{UC-04 — Painel de Saúde do Edifício}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Síndico visualiza status geral: \textcolor{green!60!black}{\textbf{em dia}} /
+    \textcolor{orange}{\textbf{vencendo}} / \textcolor{red}{\textbf{vencido}}
+    \item Morador acessa visão simplificada de transparência (somente leitura)
+\end{itemize}
+
+\vspace{0.5cm}
+
+% -----------------------------------------
+\section{Fora do Escopo do MVP}
+
+Os itens abaixo são relevantes para versões futuras, mas \textbf{não testam a hipótese
+central} e foram deliberadamente excluídos:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Score de saúde com Inteligência Artificial
+    \item Validação de autenticidade de laudos (ex.: integração com cartório digital)
+    \item Integração com ERPs condominiais existentes (ex.: Superlógica, Condomínio21)
+    \item Aplicativo mobile (Flutter) — presente na stack final, mas não no MVP
+    \item \textbf{Sugestão de corretiva pelo morador} — moradores poderiam abrir chamados sugerindo itens para manutenção corretiva, a serem aprovados ou ignorados pelo síndico
+    \item \textbf{Controle de acesso a documentos} — arquivos em \texttt{/uploads} devem ser protegidos por middleware de autenticação, garantindo que apenas usuários vinculados ao condomínio consigam acessar os laudos. Hoje o servidor de arquivos estáticos serve arquivos publicamente
+\end{itemize}
+
+\vspace{0.5cm}
+
+% -----------------------------------------
+\section{Arquitetura de Software}
+\label{sec:arquitetura}
+
+Adotada uma \textbf{arquitetura em camadas simples}, priorizada pela manutenibilidade
+por um time enxuto (um engenheiro de software + analistas/suporte):
+
+\begin{verbatim}
+src/
++-- routes/          # Roteamento Fastify
++-- controllers/     # Recebe req, chama service, devolve res
++-- services/        # Regras de negócio
++-- repositories/    # Acesso ao banco via Prisma
++-- jobs/            # Cron de alertas (node-cron)
++-- middlewares/     # Autenticação, error handler global
+\end{verbatim}
+
+\textbf{Princípios adotados:}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Controllers são \textit{burros de propósito} — nenhuma regra de negócio vive ali.
+    \item Services contêm toda a lógica do domínio e são testáveis de forma isolada.
+    \item Repositories encapsulam o Prisma — facilitam substituição futura sem alterar services.
+    \item Um error handler global no Fastify elimina try/catch repetitivo nos controllers.
+\end{itemize}
+
+\textbf{Decisões deliberadamente evitadas no MVP:}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Microserviços — complexidade operacional desnecessária nesta fase.
+    \item Clean Architecture / Hexagonal completo — overhead burocrático incompatível com
+    time pequeno e prazo de MVP.
+    \item Feature folders — organização por camada é suficiente até o time crescer.
+\end{itemize}
+
+\vspace{0.5cm}
+
+% -----------------------------------------
+\section{Sistema de Alertas}
+\label{sec:alertas}
+
+\subsection{Fluxo de Disparo}
+
+O job de alertas roda diariamente às \textbf{8h (America/Sao\_Paulo)} via \texttt{node-cron}
+e processa todas as inspeções com status \texttt{SCHEDULED} ou \texttt{OVERDUE}.
+
+Para cada inspeção, há três gatilhos independentes:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Gatilho} & \textbf{Condição} & \textbf{Frequência} \\
+\midrule
+\texttt{DAYS\_15\_BEFORE} & 15 dias antes do \texttt{scheduledDate} & Uma vez \\
+\texttt{DAYS\_7\_BEFORE}  & 7 dias antes do \texttt{scheduledDate}  & Uma vez \\
+\texttt{DAILY\_REMINDER}  & Últimos 7 dias E status $\neq$ \texttt{DONE} & Diário \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Destinatários}
+
+Todos os usuários com papel \texttt{MANAGER} vinculados ao condomínio do equipamento
+recebem o alerta.
+
+\subsection{Idempotência}
+
+Antes de enviar, o sistema verifica se já existe um \texttt{Alert} com o mesmo
+\texttt{inspectionId} + \texttt{trigger} + \texttt{status: SENT} no mesmo dia.
+Isso previne duplicidade em caso de reexecução do job.
+
+\subsection{Tratamento de Falhas}
+
+Falhas de envio são registradas no model \texttt{Alert} com \texttt{status: FAILED}
+e a mensagem de erro. O job continua processando os demais alertas — sem retry
+automático no MVP.
+
+\subsection{Edge Cases Documentados}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Servidor fora no dia do gatilho} — o alerta D-15 ou D-7 não será
+    reenviado no dia seguinte. Mitigação simples: ampliar a janela de verificação
+    para $\pm$1 dia (\texttt{daysUntilDue <= 15 \&\& >= 14}).
+    \item \textbf{Inspeção marcada como DONE durante a semana final} — o cron para
+    de enviar automaticamente, pois o \texttt{where} filtra apenas \texttt{SCHEDULED}
+    e \texttt{OVERDUE}. Depende da atualização correta de status ao registrar execução.
+\end{itemize}
+
+\vspace{0.5cm}
+
+% -----------------------------------------
+\section{Modelagem do Banco de Dados}
+\label{sec:modelagem}
+
+\subsection{Decisões de Modelagem}
+
+As seguintes premissas guiaram o design do schema:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Síndico profissional (N:N)} — um usuário pode gerenciar múltiplos condomínios
+    e um condomínio pode ter múltiplos usuários. Resolvido via tabela de junção
+    \texttt{UserCondominium} com campo \texttt{role}.
+    \item \textbf{Dois papéis apenas} — \texttt{MANAGER} (síndico/zelador, front de gestão)
+    e \texttt{RESIDENT} (somente leitura, front de transparência). Papel de zelador
+    diferenciado entra em versão futura.
+    \item \textbf{Planos de manutenção baseados na NBR 5674} — pré-definidos pelo sistema
+    mas editáveis pelo síndico. Flag \texttt{isCustomized} registra se o padrão foi alterado.
+    \item \textbf{Três tipos de manutenção} — rotina, preventiva e corretiva. A corretiva
+    é registrada manualmente pelo síndico após uma falha.
+    \item \textbf{Histórico de alertas persistido} — cada alerta enviado é registrado com
+    \texttt{trigger}, \texttt{status} e \texttt{timestamp} para rastreabilidade, auditoria
+    e idempotência.
+    \item \textbf{Documentos desacoplados} — laudos vinculados à inspeção, não ao equipamento,
+    pois cada ciclo gera laudos distintos.
+    \item \textbf{Armazenamento local no MVP} — arquivos servidos com path estruturado:
+    \texttt{/uploads/inspections/\{inspectionId\}/\{fileName\}}.
+    Facilita migração futura para S3 sem alterar o schema.
+    \item \textbf{Canal de alerta} — apenas \texttt{EMAIL} no MVP via Nodemailer + Gmail OAuth2.
+    Push notification entra com o app mobile Flutter em versão futura.
+\end{itemize}
+
+\subsection{Diagrama de Entidades (ER simplificado)}
+
+\begin{verbatim}
+  User ---------------- UserCondominium ---- Condominium
+    |                       (role)                |
+    |                                             |
+    +-- registeredBy ---- Inspection ---- MaintenancePlan -- Equipment
+                          /        \
+                     Document     Alert
+                                 (trigger)
+\end{verbatim}
+
+\subsection{Schema Prisma}
+
+\begin{verbatim}
+// -- Enums --------------------------------------------------
+
+enum Role {
+  MANAGER   // síndico — acesso total (front de gestão)
+  RESIDENT  // morador — somente leitura (front de transparência)
+}
+
+enum EquipmentType {
+  ELEVATOR
+  LIGHTNING_ROD
+  WATER_TANK
+  OTHER
+}
+
+enum MaintenanceType {
+  ROUTINE     // rotina — periodicidade fixa
+  PREVENTIVE  // preventiva — programada
+  CORRECTIVE  // corretiva — após falha, registrada manualmente
+}
+
+enum InspectionStatus {
+  SCHEDULED  // agendada
+  DONE       // realizada
+  OVERDUE    // vencida
+}
+
+enum AlertStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum AlertChannel {
+  EMAIL
+}
+
+enum AlertTrigger {
+  DAYS_15_BEFORE  // disparo único em D-15
+  DAYS_7_BEFORE   // disparo único em D-7
+  DAILY_REMINDER  // reenvio diário na semana final
+}
+
+// -- Models -------------------------------------------------
+
+model User {
+  id           String            @id @default(uuid())
+  name         String
+  email        String            @unique
+  passwordHash String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  condominiums UserCondominium[]
+  inspections  Inspection[]
+}
+
+model Condominium {
+  id           String            @id @default(uuid())
+  name         String
+  cnpj         String?           @unique
+  address      String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  users        UserCondominium[]
+  equipment    Equipment[]
+}
+
+model UserCondominium {
+  id            String      @id @default(uuid())
+  userId        String
+  condominiumId String
+  role          Role
+  createdAt     DateTime    @default(now())
+
+  user          User        @relation(fields: [userId],        references: [id])
+  condominium   Condominium @relation(fields: [condominiumId], references: [id])
+
+  @@unique([userId, condominiumId])
+}
+
+model Equipment {
+  id            String            @id @default(uuid())
+  condominiumId String
+  name          String
+  type          EquipmentType
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  condominium      Condominium      @relation(fields: [condominiumId], references: [id])
+  maintenancePlans MaintenancePlan[]
+}
+
+model MaintenancePlan {
+  id               String          @id @default(uuid())
+  equipmentId      String
+  type             MaintenanceType
+  frequencyDays    Int
+  alertDaysBeforeDue Int[]         @default([15, 7])
+  description      String
+  isCustomized     Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  equipment     Equipment       @relation(fields: [equipmentId], references: [id])
+  inspections   Inspection[]
+}
+
+model Inspection {
+  id                String           @id @default(uuid())
+  maintenancePlanId String
+  scheduledById     String
+  executedById      String?
+  scheduledDate     DateTime
+  executedAt        DateTime?
+  status            InspectionStatus
+  notes             String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  maintenancePlan   MaintenancePlan  @relation(fields: [maintenancePlanId], references: [id])
+  scheduledBy       User             @relation("ScheduledBy", fields: [scheduledById], references: [id])
+  executedBy        User?            @relation("ExecutedBy",  fields: [executedById],  references: [id])
+  documents         Document[]
+  alerts            Alert[]
+}
+
+model Document {
+  id           String     @id @default(uuid())
+  inspectionId String
+  fileName     String
+  url          String
+  mimeType     String
+  sizeBytes    Int
+  createdAt    DateTime   @default(now())
+
+  inspection   Inspection @relation(fields: [inspectionId], references: [id])
+}
+
+model Alert {
+  id           String        @id @default(uuid())
+  inspectionId String
+  channel      AlertChannel
+  trigger      AlertTrigger
+  status       AlertStatus   @default(PENDING)
+  sentAt       DateTime?
+  error        String?
+  createdAt    DateTime      @default(now())
+
+  inspection   Inspection    @relation(fields: [inspectionId], references: [id])
+}
+\end{verbatim}
+
+\subsection{Notas de Implementação}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Status calculado vs.\ persistido} — \texttt{InspectionStatus} pode ser
+    calculado em runtime comparando \texttt{scheduledDate} com \texttt{NOW()}, mas
+    persistir facilita queries do painel. Recomenda-se um job cron que atualiza o campo
+    periodicamente (o mesmo job de alertas pode acumular essa responsabilidade).
+    \item \textbf{scheduledById vs executedById} — separação explícita entre quem agendou
+    e quem executou a inspeção. \texttt{executedById} é nullable até a inspeção ser concluída.
+    \item \textbf{Corretiva} — \texttt{scheduledDate} recebe a data do registro da falha.
+    \texttt{frequencyDays} no \texttt{MaintenancePlan} é ignorado para este tipo.
+    \item \textbf{Índices recomendados} — \texttt{Inspection.scheduledDate} (para o cron
+    de alertas) e \texttt{Equipment.condominiumId} (para o painel de saúde).
+    \item \textbf{Soft delete} — adicionar \texttt{deletedAt DateTime?} nas entidades
+    principais é \textbf{obrigatório} dado que a memória técnica auditável é o principal
+    diferencial do produto. Remoção física de registros contradiz esse valor.
+\end{itemize}
+
+\vspace{0.5cm}
+
+% -----------------------------------------
+\section{Componentes do Frontend}
+\label{sec:frontend}
+
+Os componentes estão organizados por página. Cada componente lista a query Prisma
+correspondente que alimenta seus dados.
+
+\subsection{Autenticação — \texttt{/login} · \texttt{/register}}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{LoginForm} — \texttt{User.findUnique(\{ email \})}
+    \item \textbf{RegisterForm} — \texttt{User.create()}
+\end{itemize}
+
+\subsection{Dashboard — \texttt{/dashboard} (MANAGER)}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{HealthScoreCard} — score e status geral do condomínio \\
+          Query: \texttt{Inspection.count(\{ condominiumId, status \})}
+    \item \textbf{MetricsSummary} — contagem de inspeções em dia / vencendo / vencidas \\
+          Query: \texttt{Inspection.groupBy(status)}
+    \item \textbf{EquipmentList} — lista resumida com badge de status por equipamento \\
+          Query: \texttt{Equipment.findMany(\{ condominiumId, include: nextInspection \})}
+    \item \textbf{AlertFeed} — alertas recentes do condomínio \\
+          Query: \texttt{Alert.findMany(\{ condominiumId, orderBy: createdAt, take: 10 \})}
+    \item \textbf{InspectionCalendar} — inspeções agendadas nos próximos 30 dias \\
+          Query: \texttt{Inspection.findMany(\{ scheduledDate: \{ gte: today, lte: +30d \} \})}
+\end{itemize}
+
+\textbf{Nota:} O \texttt{EquipmentList} do dashboard busca apenas o próximo vencimento
+por equipamento — endpoint separado do \texttt{EquipmentTable} da página de equipamentos,
+que traz todos os planos de manutenção.
+
+\subsection{Equipamentos — \texttt{/equipment}}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{EquipmentTable} — tabela completa de equipamentos com planos \\
+          Query: \texttt{Equipment.findMany(\{ condominiumId, include: maintenancePlans \})}
+    \item \textbf{AddEquipmentForm} — cadastro de equipamento + plano de manutenção NBR \\
+          Queries: \texttt{Equipment.create()} + \texttt{MaintenancePlan.create()}
+\end{itemize}
+
+\subsection{Detalhe do Equipamento — \texttt{/equipment/:id}}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{EquipmentHeader} — nome, tipo e status atual \\
+          Query: \texttt{Equipment.findUnique(\{ id, include: maintenancePlans \})}
+    \item \textbf{InspectionHistory} — histórico de vistorias com documentos vinculados \\
+          Query: \texttt{Inspection.findMany(\{ equipmentId, include: documents, orderBy: scheduledDate \})}
+    \item \textbf{DocumentList} — laudos e certificados de uma inspeção \\
+          Query: \texttt{Document.findMany(\{ inspectionId \})}
+    \item \textbf{MarkDoneForm} — registrar execução e fazer upload de laudo \\
+          Queries: \texttt{Inspection.update(\{ status: DONE, executedById, executedAt \})} + \texttt{Document.create(\{ url, mimeType \})}
+\end{itemize}
+
+\subsection{Painel do Morador — \texttt{/resident} (RESIDENT)}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{BuildingHealth} — score de saúde em modo somente leitura \\
+          Query: \texttt{Inspection.count(\{ condominiumId, status \})}
+    \item \textbf{PublicEquipmentList} — status dos equipamentos sem dados sensíveis \\
+          Query: \texttt{Equipment.findMany(\{ condominiumId, select: \{ name, type, status \} \})}
+    \item \textbf{LastInspectionBadge} — data da última vistoria realizada por equipamento \\
+          Query: \texttt{Inspection.findFirst(\{ equipmentId, status: DONE, orderBy: executedAt desc \})}
+\end{itemize}
+
+\textbf{Nota de segurança:} O painel do morador usa \texttt{select} explícito no Prisma
+para não expor campos sensíveis como \texttt{scheduledById}, \texttt{executedById} ou
+\texttt{notes}. Esse filtro deve ser garantido na camada de serviço, não apenas no frontend.
+
+\vspace{0.5cm}
+
+% -----------------------------------------
+\section{Dashboard — Layout e Decisões de UX}
+\label{sec:dashboard}
+
+\subsection{Wireframe — Visão do Síndico (MANAGER)}
+
+\begin{verbatim}
++-------------------------------------------------------------+
+|  SafeCondo          [Cond. Parque das Flores]    MANAGER v  |
++-------------------------------------------------------------+
+|                                                             |
+|  +-----------+  +-----------+  +-----------+  +---------+ |
+|  |Equipament.|  |  Em dia   |  | Vencendo  |  |Vencidos | |
+|  |    12     |  |     7     |  |     3     |  |    2    | |
+|  +-----------+  +-----------+  +-----------+  +---------+ |
+|                                                             |
+|  +-----------------------------------------------------+   |
+|  |  Saúde do condomínio                       72 pts   |   |
+|  |  Em dia    ############...................   7      |   |
+|  |  Vencendo  #####..........................   3      |   |
+|  |  Vencidos  ###............................   2      |   |
+|  |  [====================|..........] Regular  |   |
+|  +-----------------------------------------------------+   |
+|                                                             |
+|  +--------------------------+ +--------------------------+ |
+|  | Equipamentos             | | Alertas recentes          | |
+|  | Elevador A   [vencendo]  | | * Para-raios — vencido    | |
+|  | Para-raios   [vencido]   | | * Bomba — vencida 38d     | |
+|  | Caixa d'água [em dia]    | | * Elevador A — D-15 env.  | |
+|  | Elevador B   [em dia]    | | * Caixa d'água — concluído| |
+|  | Bomba recalq.[vencido]   | |                           | |
+|  | [Ver todos ->]            | | [Ver histórico ->]         | |
+|  +--------------------------+ +--------------------------+ |
+|                                                             |
+|  +-----------------------------------------------------+   |
+|  |  Inspeções nos próximos 30 dias                     |   |
+|  |  # Realizadas  # Agendadas  # Vencidas              |   |
+|  |  |   |   |   |   |   |   |   |   |   |             |   |
+|  |  15  18  21  24  27  30  02  05  08  11             |   |
+|  +-----------------------------------------------------+   |
++-------------------------------------------------------------+
+\end{verbatim}
+
+\subsection{Wireframe — Visão do Morador (RESIDENT)}
+
+\begin{verbatim}
++-------------------------------------------------------------+
+|  SafeCondo          [Cond. Parque das Flores]    RESIDENT v |
++-------------------------------------------------------------+
+|                                                             |
+|  +-----------------------------------------------------+   |
+|  |  Saúde do edifício                                  |   |
+|  |                                                     |   |
+|  |         Status geral: Regular (72 pts)              |   |
+|  |  [==================|................]              |   |
+|  +-----------------------------------------------------+   |
+|                                                             |
+|  +-----------------------------------------------------+   |
+|  |  Equipamentos do condomínio                         |   |
+|  |                                                     |   |
+|  |  Elevador Social A        [vencendo]                |   |
+|  |  Para-raios               [vencido]                 |   |
+|  |  Caixa d'água             [em dia]    últ: mar/26   |   |
+|  |  Elevador Social B        [em dia]    últ: fev/26   |   |
+|  |  Bomba de recalque        [vencido]                 |   |
+|  |                                                     |   |
+|  |  * Datas de execução exibidas apenas quando         |   |
+|  |    a vistoria estiver concluída (status DONE)       |   |
+|  +-----------------------------------------------------+   |
++-------------------------------------------------------------+
+\end{verbatim}
+
+\subsection{Decisões de UX}
+
+\textbf{Score de saúde numérico vs.\ qualitativo.}
+O dashboard exibe o score numérico (0--100) para o síndico, acompanhado de um
+rótulo qualitativo (Crítico / Regular / Bom / Excelente). O morador vê apenas
+o rótulo qualitativo, reduzindo a sobrecarga de informação para quem não precisa
+do detalhe técnico. A fórmula base é:
+
+\[
+\text{Score} = \frac{\text{inspeções em dia}}{\text{total de inspeções}} \times 100
+\]
+
+Versões futuras podem ponderar por criticidade do equipamento (elevador
+tem peso maior que limpeza de calha).
+
+\textbf{Separação de visões por papel.}
+O painel do morador é uma tela distinta, não um modo de leitura do painel do
+síndico. Isso evita lógica condicional complexa no frontend e garante que campos
+sensíveis (responsável pela execução, observações internas, datas de agendamento)
+nunca apareçam acidentalmente para residentes.
+
+\textbf{Dados exibidos ao morador.}
+Apenas nome do equipamento, tipo e status são exibidos publicamente. A data da
+última vistoria concluída (\texttt{executedAt}) é exibida quando disponível —
+reforça a transparência sem expor o planejamento interno do síndico.
+
+\textbf{Ações rápidas no dashboard.}
+O botão ``Marcar como realizada'' aparece diretamente na lista de equipamentos
+vencidos ou vencendo, sem necessidade de navegar até a página de detalhe.
+Reduz o atrito no fluxo mais frequente do síndico.
+
+\textbf{Gráfico de inspeções.}
+O gráfico de barras empilhadas cobre os próximos 30 dias e usa as três cores
+semânticas do sistema (verde / âmbar / vermelho). Alimentado diretamente pela
+query \texttt{Inspection.findMany} filtrada por \texttt{scheduledDate}.
+
+
+\vspace{0.5cm}
+
+% -----------------------------------------
+\section{Arquitetura do Frontend}
+\label{sec:frontarq}
+
+\subsection{Stack Definida}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{React Router v6} --- roteamento. Preferido ao TanStack Router
+    pela maturidade e ecossistema maior, sem custo adicional para o MVP.
+    \item \textbf{TanStack Query} --- gerenciamento de server state (fetch, cache,
+    loading, erro e refetch). Suficiente para o SafeCondo, onde todo estado relevante
+    vem do servidor.
+    \item \textbf{Context API} --- estado global client-side limitado ao usuário
+    autenticado e ao condomínio ativo (\texttt{AuthContext}).
+    \item \textbf{react-hook-form + Zod} --- formulários e validação. Os schemas Zod
+    são compartilhados com o backend, garantindo consistência de tipos de ponta a ponta.
+    \item \textbf{Recharts} --- gráficos, com integração nativa ao shadcn/ui.
+\end{itemize}
+
+\subsection{Estrutura de Pastas}
+
+\begin{verbatim}
+src/
++-- components/
+|   +-- ui/                  # shadcn (Button, Card, Badge, Dialog...)
+|   +-- HealthScoreCard.tsx
+|   +-- EquipmentTable.tsx
+|   +-- AlertFeed.tsx
+|   +-- InspectionCalendar.tsx
+|
++-- pages/
+|   +-- dashboard/
+|   |   +-- DashboardPage.tsx
+|   +-- equipment/
+|   |   +-- EquipmentListPage.tsx
+|   |   +-- EquipmentDetailPage.tsx
+|   +-- resident/
+|   |   +-- ResidentPage.tsx
+|   +-- auth/
+|       +-- LoginPage.tsx
+|       +-- RegisterPage.tsx
+|
++-- hooks/
+|   +-- useEquipment.ts      # TanStack Query wrappers
+|   +-- useInspections.ts
+|   +-- useAlerts.ts
+|
++-- services/
+|   +-- api.ts               # instancia axios com base URL + auth header
+|   +-- equipment.service.ts
+|   +-- inspection.service.ts
+|
++-- context/
+|   +-- AuthContext.tsx      # user, condominiumId, role
+|
++-- types/
+|   +-- index.ts             # Equipment, Inspection, Alert, User...
+|
++-- lib/
+|   +-- schemas.ts           # Zod schemas compartilhados com o backend
+|   +-- utils.ts             # formatadores de data, status helpers
+|
++-- App.tsx                  # rotas React Router
+\end{verbatim}
+
+\subsection{AuthContext}
+
+O \texttt{AuthContext} é o único estado global client-side do MVP. Armazena
+o usuário autenticado, o condomínio ativo e o papel (\texttt{role}), tornando
+esses dados acessíveis em qualquer componente sem prop drilling.
+
+\begin{verbatim}
+// context/AuthContext.tsx
+
+interface AuthState {
+  user: { id: string; name: string; email: string } | null
+  condominiumId: string | null
+  role: 'MANAGER' | 'RESIDENT' | null
+  token: string | null
+}
+
+const AuthContext = createContext<AuthState & {
+  login: (token: string, user: AuthState['user'],
+          condominiumId: string, role: AuthState['role']) => void
+  logout: () => void
+}>(null!)
+\end{verbatim}
+
+O token JWT é armazenado em memória (não em \texttt{localStorage}) e
+re-hidratado via refresh token em cookie \texttt{httpOnly} ao recarregar
+a página --- padrão mais seguro contra ataques XSS.
+
+\subsection{Hooks com TanStack Query}
+
+Cada entidade do domínio tem um hook dedicado que encapsula a query e
+expõe os dados já tipados. Exemplo para equipamentos:
+
+\begin{verbatim}
+// hooks/useEquipment.ts
+
+export function useEquipmentList(condominiumId: string) {
+  return useQuery({
+    queryKey: ['equipment', condominiumId],
+    queryFn: () => equipmentService.findAll(condominiumId),
+    staleTime: 1000 * 60 * 5,   // 5 min de cache
+  })
+}
+
+export function useEquipmentDetail(id: string) {
+  return useQuery({
+    queryKey: ['equipment', id],
+    queryFn: () => equipmentService.findOne(id),
+  })
+}
+
+export function useMarkInspectionDone() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: inspectionService.markDone,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['equipment'] })
+      queryClient.invalidateQueries({ queryKey: ['inspections'] })
+    },
+  })
+}
+\end{verbatim}
+
+O \texttt{invalidateQueries} após uma mutação garante que o dashboard e a
+lista de equipamentos reflitam o novo status imediatamente, sem reload manual.
+
+\subsection{Schemas Zod Compartilhados}
+
+Os schemas de validação em \texttt{lib/schemas.ts} são os mesmos usados
+pelo backend para validar os bodies das requisições. Isso garante que o
+frontend nunca envie um campo inesperado e que os tipos TypeScript gerados
+pelo Zod sejam idênticos nos dois lados.
+
+\begin{verbatim}
+// lib/schemas.ts  (compartilhado entre frontend e backend)
+
+export const markInspectionDoneSchema = z.object({
+  executedAt:   z.string().datetime(),
+  executedById: z.string().uuid(),
+  notes:        z.string().optional(),
+})
+
+export const addEquipmentSchema = z.object({
+  name:            z.string().min(1),
+  type:            z.enum(['ELEVATOR','LIGHTNING_ROD','WATER_TANK','OTHER']),
+  condominiumId:   z.string().uuid(),
+  frequencyDays:   z.number().int().positive(),
+  maintenanceType: z.enum(['ROUTINE','PREVENTIVE','CORRECTIVE']),
+  description:     z.string().min(1),
+})
+
+// Tipos inferidos automaticamente pelo Zod
+export type MarkInspectionDoneInput = z.infer<typeof markInspectionDoneSchema>
+export type AddEquipmentInput       = z.infer<typeof addEquipmentSchema>
+\end{verbatim}
+
+\subsection{Proteção de Rotas por Papel}
+
+O React Router protege as rotas com um componente \texttt{ProtectedRoute}
+que verifica o token e o papel antes de renderizar a página:
+
+\begin{verbatim}
+// App.tsx
+
+<Routes>
+  <Route path="/login"    element={<LoginPage />} />
+  <Route path="/register" element={<RegisterPage />} />
+
+  <Route element={<ProtectedRoute requiredRole="MANAGER" />}>
+    <Route path="/dashboard"       element={<DashboardPage />} />
+    <Route path="/equipment"       element={<EquipmentListPage />} />
+    <Route path="/equipment/:id"   element={<EquipmentDetailPage />} />
+  </Route>
+
+  <Route element={<ProtectedRoute requiredRole="RESIDENT" />}>
+    <Route path="/resident" element={<ResidentPage />} />
+  </Route>
+</Routes>
+\end{verbatim}
+
+\vspace{1cm}
+\hrule
+\vspace{0.3cm}
+{\small\color{gray} Documento vivo — atualizar conforme novas decisões forem tomadas.}
+
+\end{document}
