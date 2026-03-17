@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-ink: #0f1c14;
+    --color-accent: #2a6b45;
+    --color-accent-light: #e8f2ec;
+    --color-surface: #f4f3ef;
+    --color-card: #ffffff;
+    --color-muted: #6b7d6f;
+    --color-border: rgba(15, 28, 20, 0.1);
+
+    /* Mapeamento para variáveis preexistentes (shadcn-like) para evitar quebras */
+    --background: 42 33% 97%; /* #f4f3ef aproximado em HSL */
+    --foreground: 146 21% 9%; /* #0f1c14 aproximado em HSL */
+    --card: 0 0% 100%;
+    --card-foreground: 146 21% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 146 21% 9%;
+    --primary: 146 44% 29%; /* #2a6b45 aproximado em HSL */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 143 14% 22%; /* #2d3d33 aproximado em HSL */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 136 8% 46%; /* #6b7d6f aproximado em HSL */
+    --muted-foreground: 136 8% 46%;
+    --accent: 146 44% 45%; /* #3d8a5a aproximado em HSL */
+    --accent-foreground: 146 21% 9%;
+    --border: 146 21% 85%;   /* tom claro de verde-cinza, funciona com hsl() */
+    --input: 146 21% 9% / 0.1;
+    --ring: 146 44% 29%;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+  
+  body {
+    @apply min-h-screen bg-background font-sans text-foreground;  /* removeu bg-hero-grid */
+    margin: 0;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display text-foreground;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
