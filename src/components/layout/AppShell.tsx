@@ -34,14 +34,14 @@ export function AppShell({ children }: PropsWithChildren) {
               <BellRing className="h-6 w-6" />
             </div>
             <div>
-              <p className="font-display text-xl">SafeCondo</p>
+              <p className="font-display text-xl">Alvenar</p>
               <p className="text-sm text-muted-foreground">Gestão de manutenção condominial</p>
             </div>
           </div>
 
-          <div className="mb-5 rounded-2xl bg-secondary/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Condomínio ativo</p>
-            <p className="mt-1.5 text-base font-semibold text-foreground">Condomínio Parque das Flores</p>
+          <div className="mb-5 rounded-2xl border border-border/50 bg-white p-4 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/80">Condomínio ativo</p>
+            <p className="mt-1 text-sm font-bold text-foreground">Condomínio Parque das Flores</p>
           </div>
 
           <nav className="space-y-2">
@@ -75,7 +75,7 @@ export function AppShell({ children }: PropsWithChildren) {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="mb-3 flex items-center justify-between rounded-[1.5rem] border border-white/70 bg-card/85 px-4 py-3 shadow-panel backdrop-blur-sm md:hidden">
             <div>
-              <p className="font-display text-lg">SafeCondo</p>
+              <p className="font-display text-lg">Alvenar</p>
               <p className="text-xs text-muted-foreground">Condomínio Parque das Flores</p>
             </div>
             <Button variant="ghost" size="icon" onClick={logout} aria-label="Sair">

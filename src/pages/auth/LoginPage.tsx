@@ -25,8 +25,8 @@ export function LoginPage() {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'manager@safecondo.app',
-      password: 'safecondo123',
+      email: 'manager@alvenar.app',
+      password: 'alvenar123',
     },
   })
 
@@ -45,40 +45,45 @@ export function LoginPage() {
   return (
     <div className="min-h-screen px-4 py-6 md:px-6 md:py-8">
       <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-primary via-primary to-slate-900 p-10 text-primary-foreground shadow-panel lg:flex lg:flex-col lg:justify-between">
+
+        {/* ── Painel lateral — gradiente corrigido ── */}
+        <section className="hidden rounded-[2rem] border border-white/10 bg-ink p-10 text-white shadow-panel lg:flex lg:flex-col lg:justify-between">
           <div>
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
                 <Building2 className="h-6 w-6" />
               </div>
               <div>
-                <p className="font-display text-2xl">SafeCondo</p>
-                <p className="text-sm text-primary-foreground/75">Operação enxuta, rastreabilidade total.</p>
+                <p className="font-display text-2xl">Alvenar</p>
+                <p className="text-sm text-white/60">Operação enxuta, rastreabilidade total.</p>
               </div>
             </div>
 
             <div className="mt-16 max-w-xl space-y-6">
-              <h1 className="text-balance text-5xl text-primary-foreground">Gestão de vistorias, alertas e laudos em uma única operação.</h1>
-              <p className="text-lg text-primary-foreground/80">
+              <h1 className="text-balance text-5xl font-normal leading-tight text-white">
+                Gestão de vistorias, alertas e laudos em uma única operação.
+              </h1>
+              <p className="text-lg text-white/70">
                 Painel do síndico com visão operacional e transparência controlada para moradores.
               </p>
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-5">
-              <ShieldCheck className="h-5 w-5" />
-              <p className="mt-3 font-semibold">Alertas proativos</p>
-              <p className="mt-2 text-sm text-primary-foreground/75">D-15, D-7 e lembretes diários para itens críticos.</p>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <ShieldCheck className="h-5 w-5 text-accent-light" />
+              <p className="mt-3 font-semibold text-white">Alertas proativos</p>
+              <p className="mt-2 text-sm text-white/60">D-15, D-7 e lembretes diários para itens críticos.</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-5">
-              <LockKeyhole className="h-5 w-5" />
-              <p className="mt-3 font-semibold">Acesso por papel</p>
-              <p className="mt-2 text-sm text-primary-foreground/75">MANAGER com fluxo completo e RESIDENT com leitura segura.</p>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <LockKeyhole className="h-5 w-5 text-accent-light" />
+              <p className="mt-3 font-semibold text-white">Acesso por papel</p>
+              <p className="mt-2 text-sm text-white/60">MANAGER com fluxo completo e RESIDENT com leitura segura.</p>
             </div>
           </div>
         </section>
 
+        {/* ── Formulário ── */}
         <section className="flex items-center justify-center">
           <Card className="w-full max-w-xl">
             <CardHeader>
@@ -86,10 +91,10 @@ export function LoginPage() {
               <CardDescription>Use uma conta demo ou crie um usuário novo para testar o fluxo.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="rounded-2xl bg-secondary/70 p-4 text-sm text-secondary-foreground">
-                <p className="font-semibold">Contas demo</p>
-                <p className="mt-2">MANAGER: manager@safecondo.app / safecondo123</p>
-                <p>RESIDENT: resident@safecondo.app / safecondo123</p>
+              <div className="rounded-2xl bg-accent-light p-4 text-sm text-ink">
+                <p className="font-semibold text-accent-dark">Contas demo</p>
+                <p className="mt-2 text-ink/70">MANAGER: manager@alvenar.app / alvenar123</p>
+                <p className="text-ink/70">RESIDENT: resident@alvenar.app / alvenar123</p>
               </div>
 
               <Form {...form}>
@@ -101,7 +106,7 @@ export function LoginPage() {
                       <FormItem>
                         <FormLabel>E-mail</FormLabel>
                         <FormControl>
-                          <Input placeholder="voce@safecondo.app" {...field} />
+                          <Input placeholder="voce@alvenar.app" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -127,20 +132,21 @@ export function LoginPage() {
                   ) : null}
 
                   <Button className="w-full" type="submit" disabled={loginMutation.isPending}>
-                    {loginMutation.isPending ? 'Entrando...' : 'Acessar SafeCondo'}
+                    {loginMutation.isPending ? 'Entrando...' : 'Acessar Alvenar'}
                   </Button>
                 </form>
               </Form>
 
               <p className="text-sm text-muted-foreground">
                 Ainda não tem acesso?{' '}
-                <Link className="font-semibold text-primary hover:underline" to="/register">
+                <Link className="font-semibold text-accent hover:underline" to="/register">
                   Criar conta
                 </Link>
               </p>
             </CardContent>
           </Card>
         </section>
+
       </div>
     </div>
   )

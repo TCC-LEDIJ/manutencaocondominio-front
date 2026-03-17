@@ -25,11 +25,19 @@ export function DashboardPage() {
   const chartQuery = useUpcomingInspectionChart(condominiumId ?? '')
 
   if (overviewQuery.isLoading || alertsQuery.isLoading || chartQuery.isLoading) {
-    return <Card><CardContent className="p-8 text-sm text-muted-foreground">Carregando dashboard...</CardContent></Card>
+    return (
+      <Card>
+        <CardContent className="p-8 text-sm text-muted-foreground">Carregando dashboard...</CardContent>
+      </Card>
+    )
   }
 
   if (overviewQuery.isError || alertsQuery.isError || chartQuery.isError || !overviewQuery.data) {
-    return <Card><CardContent className="p-8 text-sm text-status-danger">Não foi possível carregar o dashboard.</CardContent></Card>
+    return (
+      <Card>
+        <CardContent className="p-8 text-sm text-status-danger">Não foi possível carregar o dashboard.</CardContent>
+      </Card>
+    )
   }
 
   const { metrics } = overviewQuery.data
@@ -39,22 +47,34 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-4">
+
+      {/* ── Hero card + health score ── */}
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.95fr)]">
-        <Card className="overflow-hidden bg-gradient-to-br from-primary via-primary to-slate-900 text-primary-foreground">
+
+        {/* Gradiente corrigido: verde escuro → verde ainda mais escuro, sem slate-900 */}
+        <Card className="overflow-hidden bg-ink text-white">
           <CardContent className="flex h-full flex-col justify-between gap-6 p-5 md:p-6">
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary-foreground/70">Painel do síndico</p>
-              <h1 className="text-3xl text-primary-foreground md:text-4xl xl:max-w-none">Operação do condomínio em tempo real</h1>
-              <p className="text-sm text-primary-foreground/75 md:text-base xl:max-w-none">
-                Visão consolidada dos itens críticos, do score de saúde e dos alertas mais recentes sem precisar navegar por múltiplas telas.
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/50">
+                Painel do síndico
+              </p>
+              <h1 className="text-3xl text-white md:text-4xl">
+                Operação do condomínio em tempo real
+              </h1>
+              <p className="text-sm text-white/65 md:text-base">
+                Visão consolidada dos itens críticos, do score de saúde e dos alertas mais recentes
+                sem precisar navegar por múltiplas telas.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Link to="/equipment" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary transition hover:bg-white/90">
+              <Link
+                to="/equipment"
+                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:bg-accent-light"
+              >
                 Ver base completa
               </Link>
-              <span className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-primary-foreground/85">
+              <span className="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/80">
                 {metrics.overdue} itens exigem ação imediata
               </span>
             </div>
@@ -64,13 +84,15 @@ export function DashboardPage() {
         <HealthScoreCard score={metrics.healthScore} compact />
       </section>
 
+      {/* ── Métricas ── */}
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="Equipamentos" value={metrics.totalEquipment} description="Base cadastrada no condomínio" icon={Wrench} />
-        <MetricCard title="Em dia" value={metrics.upToDate} description="Sem risco iminente" icon={CircleCheckBig} />
-        <MetricCard title="Vencendo" value={metrics.expiringSoon} description="Janela crítica de 7 dias" icon={CalendarClock} />
-        <MetricCard title="Vencidos" value={metrics.overdue} description="Demandam ação imediata" icon={AlertCircle} />
+        <MetricCard title="Em dia"       value={metrics.upToDate}       description="Sem risco iminente"           icon={CircleCheckBig} />
+        <MetricCard title="Vencendo"     value={metrics.expiringSoon}   description="Janela crítica de 7 dias"     icon={CalendarClock} />
+        <MetricCard title="Vencidos"     value={metrics.overdue}        description="Demandam ação imediata"       icon={AlertCircle} />
       </section>
 
+      {/* ── Equipamentos + alertas ── */}
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
         <EquipmentList items={prioritizedEquipment} maxItems={4} compact title="Fila prioritária" />
         <AlertFeed alerts={alertsQuery.data ?? []} maxItems={4} compact />

@@ -76,7 +76,7 @@ export function RegisterPage() {
                     <FormItem className="md:col-span-2">
                       <FormLabel>E-mail</FormLabel>
                       <FormControl>
-                        <Input placeholder="paula@safecondo.app" {...field} />
+                        <Input placeholder="paula@alvenar.app" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

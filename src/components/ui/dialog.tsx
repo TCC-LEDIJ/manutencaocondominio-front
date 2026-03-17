@@ -15,7 +15,8 @@ const DialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
-    className={cn('fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-sm', className)}
+    // ink/45 no lugar de slate-950/45 — consistente com a paleta
+    className={cn('fixed inset-0 z-50 bg-ink/50 backdrop-blur-sm', className)}
     {...props}
   />
 ))
@@ -36,7 +37,7 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full p-1 text-muted-foreground transition-colors hover:bg-accent-light hover:text-accent">
         <X className="h-4 w-4" />
         <span className="sr-only">Fechar</span>
       </DialogPrimitive.Close>

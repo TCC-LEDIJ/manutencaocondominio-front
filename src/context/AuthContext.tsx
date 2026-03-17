@@ -13,7 +13,7 @@ type AuthContextValue = AuthState & {
   logout: () => void
 }
 
-const STORAGE_KEY = 'safecondo.auth'
+const STORAGE_KEY = 'alvenar.auth'
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 

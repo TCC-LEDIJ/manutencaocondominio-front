@@ -30,11 +30,11 @@
     \vspace{-1cm}
     {\large\color{accent} Documento de Referência Técnica} \\
     \vspace{0.3cm}
-    {\LARGE\bfseries\color{primary} SafeCondo — MVP} \\
+    {\LARGE\bfseries\color{primary} Alvenar — MVP} \\
     \vspace{0.3cm}
     {\normalsize Decisões técnicas e escopo acordados até o momento}
 }
-\author{Equipe SafeCondo}
+\author{Equipe Alvenar}
 \date{\today}
 
 \begin{document}
@@ -58,7 +58,7 @@
     especialmente vantajoso para um time enxuto.
     \item \textbf{shadcn/ui} — biblioteca de componentes cujo código é copiado diretamente
     para o projeto, sem dependência de versão externa. Fornece prontos os componentes mais
-    usados no SafeCondo: \texttt{Table}, \texttt{Badge}, \texttt{Dialog}, \texttt{Card},
+    usados no Alvenar: \texttt{Table}, \texttt{Badge}, \texttt{Dialog}, \texttt{Card},
     \texttt{Form} e \texttt{Progress}.
     \item \textbf{Recharts} — gráficos (barras empilhadas do calendário de inspeções e
     barra de score de saúde), com integração nativa ao shadcn/ui.
@@ -101,7 +101,7 @@
 \section{Justificativa: PostgreSQL vs.\ NoSQL}
 \label{sec:banco}
 
-Os dados do SafeCondo são \textbf{altamente relacionais} por natureza:
+Os dados do Alvenar são \textbf{altamente relacionais} por natureza:
 
 \[
 \text{Condomínio} \rightarrow \text{Equipamentos} \rightarrow \text{Vistorias} \rightarrow \text{Documentos/Laudos}
@@ -576,7 +576,7 @@ para não expor campos sensíveis como \texttt{scheduledById}, \texttt{executedB
 
 \begin{verbatim}
 +-------------------------------------------------------------+
-|  SafeCondo          [Cond. Parque das Flores]    MANAGER v  |
+|  Alvenar            [Cond. Parque das Flores]    MANAGER v  |
 +-------------------------------------------------------------+
 |                                                             |
 |  +-----------+  +-----------+  +-----------+  +---------+ |
@@ -615,7 +615,7 @@ para não expor campos sensíveis como \texttt{scheduledById}, \texttt{executedB
 
 \begin{verbatim}
 +-------------------------------------------------------------+
-|  SafeCondo          [Cond. Parque das Flores]    RESIDENT v |
+|  Alvenar            [Cond. Parque das Flores]    RESIDENT v |
 +-------------------------------------------------------------+
 |                                                             |
 |  +-----------------------------------------------------+   |
@@ -689,7 +689,7 @@ query \texttt{Inspection.findMany} filtrada por \texttt{scheduledDate}.
     \item \textbf{React Router v6} --- roteamento. Preferido ao TanStack Router
     pela maturidade e ecossistema maior, sem custo adicional para o MVP.
     \item \textbf{TanStack Query} --- gerenciamento de server state (fetch, cache,
-    loading, erro e refetch). Suficiente para o SafeCondo, onde todo estado relevante
+    loading, erro e refetch). Suficiente para o Alvenar, onde todo estado relevante
     vem do servidor.
     \item \textbf{Context API} --- estado global client-side limitado ao usuário
     autenticado e ao condomínio ativo (\texttt{AuthContext}).

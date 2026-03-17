@@ -7,11 +7,16 @@ import { RegisterPage } from './pages/auth/RegisterPage'
 import { DashboardPage } from './pages/dashboard/DashboardPage'
 import { EquipmentDetailPage } from './pages/equipment/EquipmentDetailPage'
 import { EquipmentListPage } from './pages/equipment/EquipmentListPage'
+import { LandingPage } from './pages/landing/LandingPage'
 import { ResidentPage } from './pages/resident/ResidentPage'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 
-function HomeRedirect() {
-  const { role } = useAuth()
+function HomeEntry() {
+  const { role, token } = useAuth()
+
+  if (!token || !role) {
+    return <LandingPage />
+  }
 
   if (role === 'MANAGER') {
     return <Navigate to="/dashboard" replace />
@@ -21,7 +26,7 @@ function HomeRedirect() {
     return <Navigate to="/resident" replace />
   }
 
-  return <Navigate to="/login" replace />
+  return <Navigate to="/resident" replace />
 }
 
 function PublicOnly({ children }: { children: ReactNode }) {
@@ -37,7 +42,7 @@ function PublicOnly({ children }: { children: ReactNode }) {
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomeRedirect />} />
+      <Route path="/" element={<HomeEntry />} />
       <Route
         path="/login"
         element={
